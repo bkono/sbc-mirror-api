@@ -6,12 +6,17 @@ import com.google.api.client.auth.oauth2.Credential
 import com.google.api.services.mirror.Mirror
 import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.jackson2.JacksonFactory
+import akka.event.slf4j.Logger
+import scala.util.{Success, Try}
+import com.google.api.client.googleapis.json.GoogleJsonResponseException
 
 object MirrorClient {
   def apply(credential: Credential) = new MirrorClient(credential)
 }
 
 class MirrorClient(credential: Credential) {
+  val log = Logger(getClass.getCanonicalName)
+
   def getMirror(credential: Credential): Mirror = new Mirror.Builder(new NetHttpTransport, new JacksonFactory, credential)
                                                     .setApplicationName("See-Thru Bamboo").build()
 
@@ -38,8 +43,15 @@ class MirrorClient(credential: Credential) {
     subscription.setUserToken(userId)
     if (operations.isDefined) subscription.setOperation(operations.get.asJava)
 
-    getMirror(credential).subscriptions().insert(subscription).execute()
+    Try(Some(getMirror(credential).subscriptions().insert(subscription).execute())) recoverWith {
+      case e: GoogleJsonResponseException => {
+        log.warn(s"Failed while attempting to subscribe to timeline notifications for userId [ $userId ]. Probably on localhost. ")
+        log.warn(e.getDetails.toPrettyString)
+        Success(None)
+      }
+    }
   }
+
   def insertTimelineSubscription(callbackUrl: String, userId: String, operations: Option[Seq[String]] = None) = insertSubscription(callbackUrl, userId, "timeline", operations)
   def insertLocationsSubscription(callbackUrl: String, userId: String, operations: Option[Seq[String]] = None) = insertSubscription(callbackUrl, userId, "locations", operations)
 

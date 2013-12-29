@@ -10,8 +10,11 @@ import scala.concurrent.Await
 import akka.util.Timeout
 
 object CredentialStoreProxy {
-  val proxy = new CredentialStoreProxy
-  def apply() = proxy
+  var proxy: Option[CredentialStoreProxy] = None
+  def apply()(implicit system: ActorSystem) = {
+    if (proxy.isEmpty) proxy = Some(new CredentialStoreProxy())
+    proxy.get
+  }
 }
 
 class CredentialStoreProxy()(implicit system: ActorSystem) extends CredentialStore {
