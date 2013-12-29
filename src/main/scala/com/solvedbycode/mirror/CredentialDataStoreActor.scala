@@ -11,8 +11,6 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException
 import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.collection.JavaConverters._
-
-import com.solvedbycode.bambooglassware.helpers.Actors
 import akka.util.Timeout
 import scala.concurrent.Await
 import akka.event.Logging
